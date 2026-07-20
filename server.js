@@ -12,7 +12,15 @@ const port = 3000;
 
 app.get("/api/weather/:city", async (req, res) => {
     const city = req.params.city;
-    const cacheKey = `weather:${city.tooLowerCase}`;
+    const cacheKey = `weather:${city.toLowerCase()}`;
+
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+        console.log("Cache hit for", city);
+        return res.json(JSON.parse(cached));
+    }
+
+    console.log("Cache miss for", city);
 
     try {
         const response = await axios.get(
@@ -25,6 +33,9 @@ app.get("/api/weather/:city", async (req, res) => {
                 },
             }
         );
+
+        await redis.set(cacheKey, JSON.stringify(response.data), 'EX', 43200);
+
         res.json(response.data);
     }
     catch (error) {
