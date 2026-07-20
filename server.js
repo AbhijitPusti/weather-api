@@ -5,12 +5,19 @@ require("dotenv").config();
 const Redis = require("ioredis");
 const redis = new Redis();
 
+const rateLimit = require("express-rate-limit");
+
+const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { error: 'Too many requests. Please try again in a minute.' },
+});
 
 const app = express();
 const port = 3000;
 
 
-app.get("/api/weather/:city", async (req, res) => {
+app.get("/api/weather/:city", limiter, async (req, res) => {
     const city = req.params.city;
     const cacheKey = `weather:${city.toLowerCase()}`;
 
